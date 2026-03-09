@@ -1,4 +1,4 @@
-import { fetchDashboardData, fetchUserPredictions, fetchAllPredictions, savePrediction } from './api.js';
+import { fetchDashboardData, fetchUserPredictions, fetchAllPredictions, savePrediction, deletePrediction } from './api.js';
 
 let appState = {
     currentUser: null,
@@ -128,24 +128,36 @@ function setupFilterAndModal() {
 async function handleNomineeClick(catId, nomId, nomineeItem) {
     if (nomineeItem.classList.contains('nominee-loading')) return;
 
+    const existingPred = appState.predictions.find(p => p.category_id == catId);
+    const isAlreadySelected = existingPred && existingPred.nominee_id == nomId;
+
     nomineeItem.classList.add('nominee-loading');
 
     try {
-        const updatedPred = await savePrediction(appState.currentUser.id, parseInt(catId), parseInt(nomId));
+        if (isAlreadySelected) {
+            // DE-SELECT
+            await deletePrediction(appState.currentUser.id, parseInt(catId));
 
-        // Update local state
-        const existingIdx = appState.predictions.findIndex(p => p.category_id == catId);
-        if (existingIdx >= 0) {
-            appState.predictions[existingIdx] = updatedPred;
+            // Update local state
+            appState.predictions = appState.predictions.filter(p => p.category_id != catId);
         } else {
-            appState.predictions.push(updatedPred);
+            // SELECT / CHANGE
+            const updatedPred = await savePrediction(appState.currentUser.id, parseInt(catId), parseInt(nomId));
+
+            // Update local state
+            const existingIdx = appState.predictions.findIndex(p => p.category_id == catId);
+            if (existingIdx >= 0) {
+                appState.predictions[existingIdx] = updatedPred;
+            } else {
+                appState.predictions.push(updatedPred);
+            }
         }
 
         renderCategoriesGrid();
 
     } catch (err) {
-        console.error("Erro ao salvar palpite", err);
-        alert("Erro ao salvar palpite. Tente novamente.");
+        console.error("Erro ao processar palpite", err);
+        alert("Erro ao processar palpite. Tente novamente.");
         nomineeItem.classList.remove('nominee-loading');
     }
 }

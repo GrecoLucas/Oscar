@@ -124,3 +124,13 @@ export async function savePrediction(userId, categoryId, nomineeId) {
         return data;
     }
 }
+
+export async function deletePrediction(userId, categoryId) {
+    const { error } = await supabaseClient
+        .from('predictions')
+        .delete()
+        .eq('user_id', userId)
+        .eq('category_id', categoryId);
+
+    if (error) throw error;
+}
