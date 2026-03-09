@@ -9,10 +9,16 @@ export async function loginUser(username, password) {
         .from('users')
         .select('*')
         .eq('username', username)
-        .eq('password', password)
-        .single();
+        .maybeSingle();
 
     if (error || !data) {
+        throw new Error("Usuário ou senha incorretos.");
+    }
+
+    // Verify hashed password
+    const passwordMatch = await dcodeIO.bcrypt.compare(password, data.password);
+
+    if (!passwordMatch) {
         throw new Error("Usuário ou senha incorretos.");
     }
 
@@ -31,10 +37,14 @@ export async function registerUser(username, password) {
         throw new Error("Este usuário já está em uso.");
     }
 
+    // Hash password
+    const salt = await dcodeIO.bcrypt.genSalt(10);
+    const hashedPassword = await dcodeIO.bcrypt.hash(password, salt);
+
     // Inserir
     const { data, error } = await supabaseClient
         .from('users')
-        .insert([{ username, password }])
+        .insert([{ username, password: hashedPassword }])
         .select()
         .single();
 
