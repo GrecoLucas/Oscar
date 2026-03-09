@@ -23,7 +23,6 @@ export async function renderDashboard(appContainer, currentUser, onLogout) {
                         <option value="all">Todas as Categorias</option>
                     </select>
                     <button class="btn btn-outline" id="btnViewAllPredictions" style="display:none;">Ver Todos Palpites</button>
-                    <button class="btn btn-primary" id="btnMakePrediction" style="display:none;">Fazer Palpite</button>
                     <button id="logoutBtn" class="btn btn-outline" style="padding: 0.5rem 1rem;">Sair</button>
                 </div>
             </header>
@@ -31,33 +30,6 @@ export async function renderDashboard(appContainer, currentUser, onLogout) {
             <main id="mainContent">
                 <div class="loader"></div>
             </main>
-        </div>
-
-        <!-- Make Prediction Modal -->
-        <div id="predictionModal" class="modal hidden">
-            <div class="modal-content glass-panel fade-in">
-                <div class="modal-header">
-                    <h2>Fazer Palpite</h2>
-                    <button id="closeModalBtn" class="close-btn">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="modalCategorySelect">Escolha a Categoria</label>
-                        <select id="modalCategorySelect" class="form-control">
-                            <option value="">Selecione uma categoria...</option>
-                        </select>
-                    </div>
-                    <div class="form-group hidden" id="nomineeSelectGroup">
-                        <label for="modalNomineeSelect">Escolha o Candidato</label>
-                        <select id="modalNomineeSelect" class="form-control">
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button id="savePredictionBtn" class="btn btn-primary hidden" style="width: 100%;">Salvar Palpite</button>
-                    <div id="modalError" class="error-message hidden"></div>
-                </div>
-            </div>
         </div>
     `;
 
@@ -86,10 +58,8 @@ export async function renderDashboard(appContainer, currentUser, onLogout) {
 
 function setupFilterAndModal() {
     const filterSelect = document.getElementById('categoryFilter');
-    const modalSelect = document.getElementById('modalCategorySelect');
 
     filterSelect.style.display = 'inline-block';
-    document.getElementById('btnMakePrediction').style.display = 'inline-block';
     document.getElementById('btnViewAllPredictions').style.display = 'inline-block';
 
     appState.categories.forEach(cat => {
@@ -97,103 +67,11 @@ function setupFilterAndModal() {
         opt.value = cat.id;
         opt.textContent = cat.name;
         filterSelect.appendChild(opt);
-
-        const modOpt = document.createElement('option');
-        modOpt.value = cat.id;
-        modOpt.textContent = cat.name;
-        modalSelect.appendChild(modOpt);
     });
 
     filterSelect.addEventListener('change', (e) => {
         appState.selectedCategoryIdFilter = e.target.value;
         renderCategoriesGrid();
-    });
-
-    // Make Prediction Logic
-    const modalMake = document.getElementById('predictionModal');
-    const btnMake = document.getElementById('btnMakePrediction');
-    const btnCloseMake = document.getElementById('closeModalBtn');
-    const nomineeSelectGroup = document.getElementById('nomineeSelectGroup');
-    const modalNomineeSelect = document.getElementById('modalNomineeSelect');
-    const btnSave = document.getElementById('savePredictionBtn');
-    const modalErrorMake = document.getElementById('modalError');
-
-    btnMake.addEventListener('click', () => {
-        modalSelect.value = '';
-        nomineeSelectGroup.classList.add('hidden');
-        btnSave.classList.add('hidden');
-        modalErrorMake.classList.add('hidden');
-        modalMake.classList.remove('hidden');
-    });
-
-    btnCloseMake.addEventListener('click', () => {
-        modalMake.classList.add('hidden');
-    });
-
-    modalSelect.addEventListener('change', (e) => {
-        const catId = e.target.value;
-        modalError.classList.add('hidden');
-
-        if (!catId) {
-            nomineeSelectGroup.classList.add('hidden');
-            btnSave.classList.add('hidden');
-            return;
-        }
-
-        const catNominees = appState.nominees.filter(n => n.category_id == catId);
-        modalNomineeSelect.innerHTML = '<option value="">Selecione o candidato...</option>';
-        catNominees.forEach(n => {
-            const opt = document.createElement('option');
-            opt.value = n.id;
-            opt.textContent = `${n.name}${n.movie ? ` (${n.movie})` : ''}`;
-            modalNomineeSelect.appendChild(opt);
-        });
-
-        // Pre-select if prediction exists
-        const existingPred = appState.predictions.find(p => p.category_id == catId);
-        if (existingPred) {
-            modalNomineeSelect.value = existingPred.nominee_id;
-        }
-
-        nomineeSelectGroup.classList.remove('hidden');
-        btnSave.classList.remove('hidden');
-    });
-
-    btnSave.addEventListener('click', async () => {
-        const catId = modalSelect.value;
-        const nomId = modalNomineeSelect.value;
-
-        if (!catId || !nomId) {
-            modalErrorMake.textContent = "Por favor, selecione a categoria e o candidato.";
-            modalErrorMake.classList.remove('hidden');
-            return;
-        }
-
-        btnSave.textContent = 'Salvando...';
-        btnSave.disabled = true;
-
-        try {
-            const updatedPred = await savePrediction(appState.currentUser.id, parseInt(catId), parseInt(nomId));
-
-            // Update local state
-            const existingIdx = appState.predictions.findIndex(p => p.category_id == catId);
-            if (existingIdx >= 0) {
-                appState.predictions[existingIdx] = updatedPred;
-            } else {
-                appState.predictions.push(updatedPred);
-            }
-
-            modalMake.classList.add('hidden');
-            renderCategoriesGrid(); // Re-render to show highlighting
-
-        } catch (err) {
-            console.error("Erro ao salvar palpite", err);
-            modalErrorMake.textContent = "Erro ao salvar palpite.";
-            modalErrorMake.classList.remove('hidden');
-        } finally {
-            btnSave.textContent = 'Salvar Palpite';
-            btnSave.disabled = false;
-        }
     });
 
     // View All Predictions Logic
@@ -206,7 +84,6 @@ function setupFilterAndModal() {
         if (appState.isViewingAllPredictions) {
             btnViewAll.textContent = 'Voltar ao Início';
             filterSelect.style.display = 'none';
-            btnMake.style.display = 'none';
 
             // Render basic layout for the new view page directly into mainContent
             mainContent.innerHTML = `
@@ -242,11 +119,35 @@ function setupFilterAndModal() {
             // Revert back to original view
             btnViewAll.textContent = 'Ver Todos Palpites';
             filterSelect.style.display = 'inline-block';
-            btnMake.style.display = 'inline-block';
             renderCategoriesGrid();
         }
     });
 
+}
+
+async function handleNomineeClick(catId, nomId, nomineeItem) {
+    if (nomineeItem.classList.contains('nominee-loading')) return;
+
+    nomineeItem.classList.add('nominee-loading');
+
+    try {
+        const updatedPred = await savePrediction(appState.currentUser.id, parseInt(catId), parseInt(nomId));
+
+        // Update local state
+        const existingIdx = appState.predictions.findIndex(p => p.category_id == catId);
+        if (existingIdx >= 0) {
+            appState.predictions[existingIdx] = updatedPred;
+        } else {
+            appState.predictions.push(updatedPred);
+        }
+
+        renderCategoriesGrid();
+
+    } catch (err) {
+        console.error("Erro ao salvar palpite", err);
+        alert("Erro ao salvar palpite. Tente novamente.");
+        nomineeItem.classList.remove('nominee-loading');
+    }
 }
 
 function renderAllPredictionsContent(container, searchStr = '') {
@@ -346,7 +247,7 @@ function renderCategoriesGrid() {
         const userPred = predictions.find(p => p.category_id === category.id);
 
         html += `
-            <div class="category-card">
+            <div class="category-card" data-category-id="${category.id}">
                 <div class="category-header">
                     <h3>${category.name}</h3>
                 </div>
@@ -359,7 +260,7 @@ function renderCategoriesGrid() {
             catsNominees.forEach(nominee => {
                 const isSelected = userPred && userPred.nominee_id === nominee.id;
                 html += `
-                    <li class="nominee-item ${isSelected ? 'nominee-selected' : ''}">
+                    <li class="nominee-item ${isSelected ? 'nominee-selected' : ''}" data-nominee-id="${nominee.id}">
                         ${isSelected ? '<span class="prediction-badge">Seu Palpite</span>' : ''}
                         <span class="nominee-name">${nominee.name}</span>
                         ${nominee.movie ? `<span class="nominee-movie">${nominee.movie}</span>` : ''}
@@ -376,4 +277,16 @@ function renderCategoriesGrid() {
 
     html += '</div>';
     mainContent.innerHTML = html;
+
+    // Attach click events
+    const items = mainContent.querySelectorAll('.nominee-item');
+    items.forEach(item => {
+        item.addEventListener('click', () => {
+            const nomId = item.getAttribute('data-nominee-id');
+            const catId = item.closest('.category-card').getAttribute('data-category-id');
+            if (nomId && catId) {
+                handleNomineeClick(catId, nomId, item);
+            }
+        });
+    });
 }

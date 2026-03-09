@@ -278,25 +278,34 @@ select.form-control {
     border: 1px solid transparent;
     transition: all var(--transition-fast);
     position: relative;
+    cursor: pointer;
 }
 
 .nominee-item:hover {
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(212, 175, 55, 0.2);
+    transform: scale(1.01);
 }
 
 .nominee-selected {
     background: rgba(212, 175, 55, 0.1);
     border: 1px solid rgba(212, 175, 55, 0.4);
-    transform: scale(1.02);
+}
+
+.nominee-loading {
+    opacity: 0.6;
+    pointer-events: none;
+    cursor: wait;
 }
 
 .prediction-badge {
     position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
+    top: 50%;
+    right: 0.75rem;
+    transform: translateY(-50%);
     background: var(--primary-color);
     color: #000;
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     font-weight: 700;
     padding: 0.2rem 0.5rem;
     border-radius: 4px;
