@@ -22,7 +22,7 @@ export async function renderDashboard(appContainer, currentUser, onLogout) {
                     <select id="categoryFilter" class="form-control" style="width:auto; display:none;">
                         <option value="all">Todas as Categorias</option>
                     </select>
-                    <button class="btn btn-outline" id="btnViewAllPredictions" style="display:none;">Ver Todos</button>
+                    <button class="btn btn-outline" id="btnViewAllPredictions" style="display:none;">Ver Todos Palpites</button>
                     <button class="btn btn-primary" id="btnMakePrediction" style="display:none;">Fazer Palpite</button>
                     <button id="logoutBtn" class="btn btn-outline" style="padding: 0.5rem 1rem;">Sair</button>
                 </div>
@@ -240,7 +240,7 @@ function setupFilterAndModal() {
             }
         } else {
             // Revert back to original view
-            btnViewAll.textContent = 'Ver Todos';
+            btnViewAll.textContent = 'Ver Todos Palpites';
             filterSelect.style.display = 'inline-block';
             btnMake.style.display = 'inline-block';
             renderCategoriesGrid();
